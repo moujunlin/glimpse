@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS glimpses (
   date DATE NOT NULL DEFAULT CURRENT_DATE,
   text TEXT NOT NULL,
   photo_url TEXT,
-  lux_reply TEXT,
+  lori_reply TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

@@ -9,7 +9,7 @@ A daily photo journal. The user uploads a photo and writes one sentence about wh
 
 ```sql
 -- Today's glimpses
-SELECT id, date, text, photo_url, lux_reply, created_at
+SELECT id, date, text, photo_url, lori_reply, created_at
 FROM glimpses
 WHERE date = CURRENT_DATE
 ORDER BY created_at DESC;
@@ -17,7 +17,7 @@ ORDER BY created_at DESC;
 -- Recent glimpses without reply
 SELECT id, date, text, created_at
 FROM glimpses
-WHERE lux_reply IS NULL
+WHERE lori_reply IS NULL
 ORDER BY created_at DESC
 LIMIT 10;
 
@@ -32,7 +32,7 @@ ORDER BY created_at ASC;
 ```sql
 -- Write a reply to a glimpse
 UPDATE glimpses
-SET lux_reply = 'your reply here'
+SET lori_reply = 'your reply here'
 WHERE id = 123;
 ```
 
@@ -44,7 +44,7 @@ WHERE id = 123;
 | date | date | The date of the glimpse |
 | text | text | The user's one-sentence description |
 | photo_url | text | Public URL of the photo in Supabase Storage |
-| lux_reply | text | Your reply (null if not yet replied) |
+| lori_reply | text | Your reply (null if not yet replied) |
 | created_at | timestamptz | When the glimpse was posted |
 
 ## Guidelines
