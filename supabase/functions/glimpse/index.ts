@@ -7,11 +7,29 @@ const cors = {
   "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
 };
 
-const json = (data: unknown, s = 200) =>
-  new Response(JSON.stringify(data), {
+async function getContext(sb: any) {
+  try {
+    const { data } = await sb.rpc("get_context");
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function respond(data: unknown, ctx: unknown, s = 200) {
+  const body = ctx != null ? { data, _context: ctx } : data;
+  return new Response(JSON.stringify(body), {
     status: s,
     headers: { ...cors, "Content-Type": "application/json" },
   });
+}
+
+function errJson(msg: string, s = 500) {
+  return new Response(JSON.stringify({ error: msg }), {
+    status: s,
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS")
@@ -22,23 +40,22 @@ Deno.serve(async (req: Request) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
+  const ctx = await getContext(sb);
   const url = new URL(req.url);
   const parts = url.pathname.split("/").filter(Boolean);
   const id = parts.length > 1 ? parts[parts.length - 1] : null;
 
   try {
-    // GET — list all
     if (req.method === "GET") {
       const { data, error } = await sb
         .from("glimpses")
         .select("*")
         .order("date", { ascending: false })
         .order("created_at", { ascending: false });
-      if (error) return json({ error: error.message }, 500);
-      return json(data);
+      if (error) return errJson(error.message);
+      return respond(data, ctx);
     }
 
-    // POST — create with optional photo upload
     if (req.method === "POST") {
       const body = await req.json();
       let photoUrl: string | null = null;
@@ -55,7 +72,7 @@ Deno.serve(async (req: Request) => {
             contentType: body.photo_type || "image/jpeg",
             upsert: false,
           });
-        if (upErr) return json({ error: "Upload failed: " + upErr.message }, 500);
+        if (upErr) return errJson("Upload failed: " + upErr.message);
 
         const { data: urlData } = sb.storage.from("photos").getPublicUrl(filename);
         photoUrl = urlData.publicUrl;
@@ -70,11 +87,10 @@ Deno.serve(async (req: Request) => {
         })
         .select()
         .single();
-      if (error) return json({ error: error.message }, 500);
-      return json(data, 201);
+      if (error) return errJson(error.message);
+      return respond(data, ctx, 201);
     }
 
-    // PATCH — update
     if (req.method === "PATCH" && id) {
       const body = await req.json();
       const up: Record<string, unknown> = {};
@@ -88,12 +104,12 @@ Deno.serve(async (req: Request) => {
         .eq("id", id)
         .select()
         .single();
-      if (error) return json({ error: error.message }, 500);
-      return json(data);
+      if (error) return errJson(error.message);
+      return respond(data, ctx);
     }
 
-    return json({ error: "Not found" }, 404);
+    return errJson("Not found", 404);
   } catch (e) {
-    return json({ error: (e as Error).message }, 500);
+    return errJson((e as Error).message);
   }
 });
