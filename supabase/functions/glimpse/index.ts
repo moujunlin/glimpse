@@ -31,6 +31,13 @@ function errJson(msg: string, s = 500) {
   });
 }
 
+async function saveNote(sb: any, body: any) {
+  if (body?._note) {
+    try { await sb.from("lori_corridor").insert({ note: body._note }); } catch {}
+    delete body._note;
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS")
     return new Response(null, { status: 200, headers: cors });
@@ -58,6 +65,7 @@ Deno.serve(async (req: Request) => {
 
     if (req.method === "POST") {
       const body = await req.json();
+      await saveNote(sb, body);
       let photoUrl: string | null = null;
 
       if (body.photo_base64) {
@@ -93,6 +101,7 @@ Deno.serve(async (req: Request) => {
 
     if (req.method === "PATCH" && id) {
       const body = await req.json();
+      await saveNote(sb, body);
       const up: Record<string, unknown> = {};
       if (body.lori_reply !== undefined) up.lori_reply = body.lori_reply;
       if (body.text !== undefined) up.text = body.text;
